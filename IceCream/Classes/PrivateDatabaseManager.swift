@@ -137,6 +137,9 @@ final class PrivateDatabaseManager: DatabaseManager {
     private func fetchChangesInZones(_ callback: ((Error?) -> Void)? = nil) {
         let changesOp = CKFetchRecordZoneChangesOperation(recordZoneIDs: zoneIds, optionsByRecordZoneID: zoneIdOptions)
         changesOp.fetchAllChanges = true
+      
+        var changedRecords = [String: [CKRecord]]()
+        var deletedRecordIds = [CKRecord.ID]()
         
         changesOp.recordZoneChangeTokensUpdatedBlock = { [weak self] zoneId, token, _ in
             guard let self = self else { return }
@@ -148,14 +151,17 @@ final class PrivateDatabaseManager: DatabaseManager {
             /// The Cloud will return the modified record since the last zoneChangesToken, we need to do local cache here.
             /// Handle the record:
             guard let self = self else { return }
-            guard let syncObject = self.syncObjects.first(where: { $0.recordType == record.recordType }) else { return }
-            syncObject.add(record: record)
+            guard self.syncObjects.contains(where: { $0.recordType == record.recordType }) else { return }
+
+            let currentRecords = changedRecords[record.recordType] ?? []
+            changedRecords[record.recordType] = currentRecords + [record]
         }
         
         changesOp.recordWithIDWasDeletedBlock = { [weak self] recordId, _ in
             guard let self = self else { return }
-            guard let syncObject = self.syncObjects.first(where: { $0.zoneID == recordId.zoneID }) else { return }
-            syncObject.delete(recordID: recordId)
+            guard self.syncObjects.contains(where: { $0.zoneID == recordId.zoneID }) else { return }
+
+            deletedRecordIds.append(recordId)
         }
         
         changesOp.recordZoneFetchCompletionBlock = { [weak self](zoneId ,token, _, _, error) in
@@ -184,7 +190,29 @@ final class PrivateDatabaseManager: DatabaseManager {
         }
         
         changesOp.fetchRecordZoneChangesCompletionBlock = { error in
-            callback?(error)
+              guard let self = self else {
+                  callback?(error)
+                  return
+              }
+              
+            
+              for syncObject in self.syncObjects {
+                  let recordType = syncObject.recordType
+                  if let records = changedRecords[recordType] {
+                      records.forEach {
+                        syncObject.add(record: $0)
+                      }
+                      changedRecords[recordType] = nil
+                  }
+              }
+            
+              for recordId in deletedRecordIds {
+                  self.syncObjects
+                      .filter { $0.zoneID == recordId.zoneID }
+                      .forEach { $0.delete(recordID: recordId) }
+              }
+            
+              callback?(error)
         }
         
         database.add(changesOp)
