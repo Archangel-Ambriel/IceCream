@@ -189,7 +189,7 @@ final class PrivateDatabaseManager: DatabaseManager {
             }
         }
         
-        changesOp.fetchRecordZoneChangesCompletionBlock = { error in
+        changesOp.fetchRecordZoneChangesCompletionBlock = { [weak self] error in
               guard let self = self else {
                   callback?(error)
                   return
