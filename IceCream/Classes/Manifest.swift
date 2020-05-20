@@ -17,6 +17,7 @@ public class IceCream {
     /// If you don't want to see them in your console, just set `enableLogging` property to false.
     /// The default value is true.
     public var enableLogging: Bool = true
+    public var userDefaults: UserDefaults = UserDefaults.standard
     
 }
 

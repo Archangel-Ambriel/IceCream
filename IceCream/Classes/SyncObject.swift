@@ -46,26 +46,26 @@ extension SyncObject: Syncable {
         get {
             /// For the very first time when launching, the token will be nil and the server will be giving everything on the Cloud to client
             /// In other situation just get the unarchive the data object
-            guard let tokenData = UserDefaults.standard.object(forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value) as? Data else { return nil }
+            guard let tokenData = IceCream.shared.userDefaults.object(forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value) as? Data else { return nil }
             return NSKeyedUnarchiver.unarchiveObject(with: tokenData) as? CKServerChangeToken
         }
         set {
             guard let n = newValue else {
-                UserDefaults.standard.removeObject(forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value)
+                IceCream.shared.userDefaults.removeObject(forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value)
                 return
             }
             let data = NSKeyedArchiver.archivedData(withRootObject: n)
-            UserDefaults.standard.set(data, forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value)
+            IceCream.shared.userDefaults.set(data, forKey: T.className() + IceCreamKey.zoneChangesTokenKey.value)
         }
     }
 
     public var isCustomZoneCreated: Bool {
         get {
-            guard let flag = UserDefaults.standard.object(forKey: T.className() + IceCreamKey.hasCustomZoneCreatedKey.value) as? Bool else { return false }
+            guard let flag = IceCream.shared.userDefaults.object(forKey: T.className() + IceCreamKey.hasCustomZoneCreatedKey.value) as? Bool else { return false }
             return flag
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: T.className() + IceCreamKey.hasCustomZoneCreatedKey.value)
+            IceCream.shared.userDefaults.set(newValue, forKey: T.className() + IceCreamKey.hasCustomZoneCreatedKey.value)
         }
     }
     
